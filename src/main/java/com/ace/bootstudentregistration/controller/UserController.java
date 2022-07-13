@@ -130,7 +130,7 @@ public class UserController {
             ModelMap model) {
         // ")#<>(}" <- this is just random bullshit to avoid sql wildcard, not REGEX
         String id = searchId.isBlank() ? ")#<>(}" : "%" + searchId + "%";
-        String name = searchName.isBlank() ? ")#<>(}" : searchName;
+        String name = searchName.isBlank() ? ")#<>(}" : "%" + searchName + "%";
         List<UserBean> searchUserList = null;
         searchUserList = userDao.selectUserListByIdOrName(id, name);
         if (searchUserList.size() == 0) {
