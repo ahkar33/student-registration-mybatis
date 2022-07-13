@@ -10,17 +10,15 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
-
-import com.ace.bootstudentregistration.dao.CourseDao;
-import com.ace.bootstudentregistration.dto.course.CourseRequestDto;
-import com.ace.bootstudentregistration.dto.course.CourseResponseDto;
+    
+import com.ace.bootstudentregistration.mapper.CourseMapper;
 import com.ace.bootstudentregistration.model.CourseBean;
 
 @Controller
 @RequestMapping("/course")
 public class CourseController {
     @Autowired
-    private CourseDao courseDao;
+    private CourseMapper courseDao;
 
     @GetMapping("/addCourse")
     public ModelAndView setupAddCourse() {
@@ -29,7 +27,6 @@ public class CourseController {
 
     @PostMapping("/addCourse")
     public String addCourse(@ModelAttribute("data") CourseBean courseBean, ModelMap model) {
-        CourseRequestDto resDto = new CourseRequestDto(courseBean.getName());
         if (courseBean.getName().isBlank()) {
             model.addAttribute("error", "Fill the blank !!");
             model.addAttribute("data", courseBean);
@@ -39,15 +36,15 @@ public class CourseController {
             model.addAttribute("data", courseBean);
             return "BUD003";
         } else {
-            List<CourseResponseDto> courseList = courseDao.selectAllCourses();
+            List<CourseBean> courseList = courseDao.selectAllCourses();
             if (courseList.size() == 0) {
-                resDto.setId("COU001");
+                courseBean.setId("COU001");
             } else {
                 int tempId = Integer.parseInt(courseList.get(courseList.size() - 1).getId().substring(3)) + 1;
                 String userId = String.format("COU%03d", tempId);
-                resDto.setId(userId);
+                courseBean.setId(userId);
             }
-            courseDao.insertCourse(resDto);
+            courseDao.insertCourse(courseBean);
             model.addAttribute("message", "Registered Succesfully !!");
             model.addAttribute("data", new CourseBean());
             return "BUD003";
