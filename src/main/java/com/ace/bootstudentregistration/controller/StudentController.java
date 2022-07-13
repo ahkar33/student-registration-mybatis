@@ -13,29 +13,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.ace.bootstudentregistration.dao.StudentDao;
-import com.ace.bootstudentregistration.dto.course.CourseResponseDto;
-import com.ace.bootstudentregistration.dto.student.StudentRequestDto;
-import com.ace.bootstudentregistration.dto.student.StudentResponseDto;
+import com.ace.bootstudentregistration.mapper.CourseMapper;
+import com.ace.bootstudentregistration.mapper.StudentMapper;
+import com.ace.bootstudentregistration.model.CourseBean;
 import com.ace.bootstudentregistration.model.StudentBean;
-import com.ace.bootstudentregistration.dao.CourseDao;
 
 @Controller
 @RequestMapping("/student")
 public class StudentController {
 
 	@Autowired
-	private StudentDao studentDao;
+	private StudentMapper studentDao;
 
 	@Autowired
-	private CourseDao courseDao;
+	private CourseMapper courseDao;
 
 	@GetMapping("/studentManagement")
 	public String studentManagement(ModelMap model) {
-		List<StudentResponseDto> studentList = studentDao.selectAllStudents();
-		List<List<CourseResponseDto>> coursesLists = new ArrayList<>();
-		for (StudentResponseDto student : studentList) {
-			List<CourseResponseDto> courseList = courseDao.selectCoursesByStudentId(student.getId());
+		List<StudentBean> studentList = studentDao.selectAllStudents();
+		List<List<CourseBean>> coursesLists = new ArrayList<>();
+		for (StudentBean student : studentList) {
+			List<CourseBean> courseList = courseDao.selectCoursesByStudentId(student.getId());
 			coursesLists.add(courseList);
 		}
 		model.addAttribute("studentList", studentList);
@@ -45,7 +43,7 @@ public class StudentController {
 
 	@GetMapping("/addStudent")
 	public String setupAddStudent(ModelMap model) {
-		List<CourseResponseDto> courseList = courseDao.selectAllCourses();
+		List<CourseBean> courseList = courseDao.selectAllCourses();
 		model.addAttribute("courseList", courseList);
 		model.addAttribute("data", new StudentBean());
 		return "STU001";
@@ -53,7 +51,7 @@ public class StudentController {
 
 	@PostMapping("/addStudent")
 	public String addStudent(@ModelAttribute("data") StudentBean studentBean, ModelMap model) {
-		List<CourseResponseDto> courseList = courseDao.selectAllCourses();
+		List<CourseBean> courseList = courseDao.selectAllCourses();
 		model.addAttribute("courseList", courseList);
 		if (studentBean.getAttendCourses().size() == 0) {
 			model.addAttribute("error", "Fill the blank !!");
@@ -66,7 +64,7 @@ public class StudentController {
 			model.addAttribute("data", studentBean);
 			return "STU001";
 		}
-		List<StudentResponseDto> studentList = studentDao.selectAllStudents();
+		List<StudentBean> studentList = studentDao.selectAllStudents();
 		if (studentList == null) {
 			studentList = new ArrayList<>();
 		}
@@ -77,10 +75,7 @@ public class StudentController {
 			String userId = String.format("STU%03d", tempId);
 			studentBean.setId(userId);
 		}
-		StudentRequestDto reqDto = new StudentRequestDto(studentBean.getName(), studentBean.getDob(),
-				studentBean.getGender(), studentBean.getPhone(), studentBean.getEducation());
-		reqDto.setId(studentBean.getId());
-		studentDao.insertStudent(reqDto);
+		studentDao.insertStudent(studentBean);
 		String[] attendCourses = new String[studentBean.getAttendCourses().size()];
 		attendCourses = studentBean.getAttendCourses().toArray(attendCourses);
 		for (int i = 0; i < attendCourses.length; i++) {
@@ -94,19 +89,12 @@ public class StudentController {
 
 	@GetMapping("/seeMore/{id}")
 	public String seeMore(@PathVariable("id") String id, ModelMap model) {
-		StudentResponseDto studentDto = studentDao.selectStudentById(id);
-		StudentBean student = new StudentBean();
-		student.setId(studentDto.getId());
-		student.setName(studentDto.getName());
-		student.setDob(studentDto.getDob());
-		student.setGender(studentDto.getGender());
-		student.setPhone(studentDto.getPhone());
-		student.setEducation(studentDto.getEducation());
-		List<CourseResponseDto> attendCourses = courseDao.selectCoursesByStudentId(id);
-		for (CourseResponseDto course : attendCourses) {
+		StudentBean student = studentDao.selectStudentById(id);
+		List<CourseBean> attendCourses = courseDao.selectCoursesByStudentId(id);
+		for (CourseBean course : attendCourses) {
 			student.addAttendCourse(course);
 		}
-		List<CourseResponseDto> courses = courseDao.selectAllCourses();
+		List<CourseBean> courses = courseDao.selectAllCourses();
 		model.addAttribute("courseList", courses);
 		model.addAttribute("data", student);
 		return "STU002";
@@ -114,7 +102,7 @@ public class StudentController {
 
 	@PostMapping("/updateStudent")
 	public String updateStudent(@ModelAttribute("data") StudentBean studentBean, ModelMap model) {
-		List<CourseResponseDto> courseList = courseDao.selectAllCourses();
+		List<CourseBean> courseList = courseDao.selectAllCourses();
 		model.addAttribute("courseList", courseList);
 		if (studentBean.getAttendCourses().size() == 0) {
 			model.addAttribute("error", "Fill the blank !!");
@@ -127,9 +115,7 @@ public class StudentController {
 			model.addAttribute("data", studentBean);
 			return "STU002";
 		}
-		StudentRequestDto reqDto = new StudentRequestDto(studentBean.getId(), studentBean.getName(),
-				studentBean.getDob(), studentBean.getGender(), studentBean.getPhone(), studentBean.getEducation());
-		studentDao.updateStudent(reqDto);
+		studentDao.updateStudent(studentBean);
 		studentDao.deleteAttendCoursesByStudentId(studentBean.getId());
 		String[] attendCourses = new String[studentBean.getAttendCourses().size()];
 		attendCourses = studentBean.getAttendCourses().toArray(attendCourses);
@@ -151,21 +137,21 @@ public class StudentController {
 	public String searchStudent(@RequestParam("id") String searchId, @RequestParam("name") String searchName,
 			@RequestParam("course") String searchCourse, ModelMap model) {
 		// ")#<>(}" <- this is just random bullshit to avoid sql wildcard, not REGEX
-		String id = searchId.isBlank() ? ")#<>(}" : searchId;
-		String name = searchName.isBlank() ? ")#<>(}" : searchName;
-		String course = searchCourse.isBlank() ? ")#<>(}" : searchCourse;
+		String id = searchId.isBlank() ? ")#<>(}" : "%" + searchId + "%";
+		String name = searchName.isBlank() ? ")#<>(}" : "%" + searchName + "%";
+		String course = searchCourse.isBlank() ? ")#<>(}" : "%" + searchCourse + "%";
 
-		List<StudentResponseDto> studentList = studentDao.selectStudentListByIdOrNameOrCourse(id, name, course);
-		List<List<CourseResponseDto>> coursesLists = new ArrayList<>();
-		for (StudentResponseDto student : studentList) {
-			List<CourseResponseDto> courseList = courseDao.selectCoursesByStudentId(student.getId());
+		List<StudentBean> studentList = studentDao.selectStudentListByIdOrNameOrCourse(id, name, course);
+		List<List<CourseBean>> coursesLists = new ArrayList<>();
+		for (StudentBean student : studentList) {
+			List<CourseBean> courseList = courseDao.selectCoursesByStudentId(student.getId());
 			coursesLists.add(courseList);
 		}
 		if (studentList.size() == 0) {
 			studentList = studentDao.selectAllStudents();
-			List<List<CourseResponseDto>> coursesList = new ArrayList<>();
-			for (StudentResponseDto student : studentList) {
-				List<CourseResponseDto> courseList = courseDao.selectCoursesByStudentId(student.getId());
+			List<List<CourseBean>> coursesList = new ArrayList<>();
+			for (StudentBean student : studentList) {
+				List<CourseBean> courseList = courseDao.selectCoursesByStudentId(student.getId());
 				coursesList.add(courseList);
 			}
 			model.addAttribute("studentList", studentList);

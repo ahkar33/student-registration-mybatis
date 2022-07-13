@@ -7,9 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 
 import com.ace.bootstudentregistration.model.CourseBean;
+import com.ace.bootstudentregistration.model.StudentBean;
 import com.ace.bootstudentregistration.model.UserBean;
 
-@MappedTypes({UserBean.class, CourseBean.class})
+@MappedTypes({UserBean.class, CourseBean.class, StudentBean.class})
 @MapperScan("com.ace.bootstudentregistration.mapper")
 @SpringBootApplication
 @ServletComponentScan

@@ -3,7 +3,6 @@ package com.ace.bootstudentregistration.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ace.bootstudentregistration.dto.course.CourseResponseDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,7 +22,7 @@ public class StudentBean {
 	private String education;
 	private List<String> attendCourses;
 	
-	public void addAttendCourse(CourseResponseDto course) {
+	public void addAttendCourse(CourseBean course) {
 		if(attendCourses == null) attendCourses = new ArrayList<>();
 		attendCourses.add(course.getId());
 	}
